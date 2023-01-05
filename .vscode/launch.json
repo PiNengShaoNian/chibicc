@@ -1,0 +1,23 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+      {
+          "name": "Linux GDB",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "${workspaceFolder}/chibicc",
+          "args": ["\"0;\""],
+          "stopAtEntry": false,
+          "cwd": "${workspaceFolder}",
+          "environment": [],
+          "console": "externalTerminal",
+          "MIMode": "gdb",
+          "setupCommands": [
+              {"text":"handle SIGUSR1 nostop noprint"},
+          ]
+      }
+  ]
+}
