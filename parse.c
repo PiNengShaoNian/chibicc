@@ -81,6 +81,19 @@ static Node *stmt(Token **rest, Token *tok)
     return node;
   }
 
+  if (equal(tok, "if"))
+  {
+    Node *node = new_node(ND_IF);
+    tok = skip(tok->next, "(");
+    node->cond = expr(&tok, tok);
+    tok = skip(tok, ")");
+    node->then = stmt(&tok, tok);
+    if (equal(tok, "else"))
+      node->els = stmt(&tok, tok->next);
+    *rest = tok;
+    return node;
+  }
+
   if (equal(tok, "{"))
     return compound_stmt(rest, tok->next);
 
