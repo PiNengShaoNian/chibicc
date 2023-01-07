@@ -8,7 +8,7 @@ chibicc: $(OBJS)
 $(OBJS): chibicc.h
 
 test: chibicc
-				./test.sh
+			chmod +x test.sh;	./test.sh
 
 clean:
 				rm -f chibicc *.o *~ tmp*
