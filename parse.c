@@ -27,6 +27,11 @@ static Obj *find_var(Token *tok)
   for (Obj *var = locals; var; var = var->next)
     if (strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len))
       return var;
+
+  for (Obj *var = globals; var; var = var->next)
+    if (strlen(var->name) == tok->len && !strncmp(tok->loc, var->name, tok->len))
+      return var;
+
   return NULL;
 }
 
@@ -619,6 +624,36 @@ static Token *function(Token *tok, Type *base_type)
   return tok;
 }
 
+static Token *global_variable(Token *tok, Type *base_type)
+{
+  bool first = true;
+
+  while (!consume(&tok, tok, ";"))
+  {
+    if (!first)
+      tok = skip(tok, ",");
+
+    first = false;
+
+    Type *ty = declarator(&tok, tok, base_type);
+    new_gvar(get_ident(ty->name), ty);
+  }
+
+  return tok;
+}
+
+// Lookahead tokens and returns true if a given token is a start
+// of a function definition or declaration.
+static bool is_function(Token *tok)
+{
+  if (equal(tok, ";"))
+    return false;
+
+  Type dummy = {};
+  Type *ty = declarator(&tok, tok, &dummy);
+  return ty->kind == TY_FUNC;
+}
+
 // program = stmt*
 Obj *parse(Token *tok)
 {
@@ -627,7 +662,14 @@ Obj *parse(Token *tok)
   while (tok->kind != TK_EOF)
   {
     Type *base_type = declspec(&tok, tok);
-    tok = function(tok, base_type);
+
+    if (is_function(tok))
+    {
+      tok = function(tok, base_type);
+      continue;
+    }
+
+    tok = global_variable(tok, base_type);
   }
 
   return globals;
