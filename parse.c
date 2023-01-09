@@ -587,9 +587,23 @@ static Node *funccall(Token **rest, Token *tok)
   return node;
 }
 
-// primary = "(" expr ")" | "sizeof" unary | ident func-args? | str | num
+// primary = "(" "{" stmt+ "}" ")"
+//         | "(" expr ")"
+//         | "sizeof" unary
+//         | ident func-args?
+//         | str
+//         | num
 static Node *primary(Token **rest, Token *tok)
 {
+  if (equal(tok, "(") && equal(tok->next, "{"))
+  {
+    // This is a GUN statement expression.
+    Node *node = new_node(ND_STMT_EXPR, tok);
+    node->body = compound_stmt(&tok, tok->next->next)->body;
+    *rest = skip(tok, ")");
+    return node;
+  }
+
   if (equal(tok, "("))
   {
     Node *node = expr(&tok, tok->next);
