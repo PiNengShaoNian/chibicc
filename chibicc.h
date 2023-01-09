@@ -130,6 +130,7 @@ Obj *parse(Token *tok);
 
 typedef enum
 {
+  TY_CHAR,
   TY_INT,
   TY_PTR,
   TY_FUNC,
@@ -163,6 +164,7 @@ struct Type
   Type *next;
 };
 
+extern Type *ty_char;
 extern Type *ty_int;
 
 bool is_integer(Type *ty);
