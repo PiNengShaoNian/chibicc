@@ -1,5 +1,8 @@
 #include "chibicc.h"
 
+// Input filename
+static char *current_filename;
+
 // Input string
 static char *current_input;
 
@@ -13,11 +16,36 @@ void error(char *fmt, ...)
   exit(1);
 }
 
-// Reports an error location and exit.
+// Reports an error message in the following format and exit.
+//
+// foo.c:10: x = y + 1;
+//               ^ <error message here>
 static void verror_at(char *loc, char *fmt, va_list ap)
 {
-  int pos = loc - current_input;
-  fprintf(stderr, "%s\n", current_input);
+  // Find a line containing `loc`.
+  char *line = loc;
+  while (current_input < line && line[-1] != '\n')
+    line--;
+
+  char *end = loc;
+  while (*end != '\n')
+    end++;
+
+  // Get a line number.
+  int line_no = 1;
+  for (char *p = current_input; p < line; p++)
+  {
+    if (*p == '\n')
+      line_no++;
+  }
+
+  // Print out the line.
+  int ident = fprintf(stderr, "%s:%d: ", current_filename, line_no);
+  fprintf(stderr, "%.*s\n", (int)(end - line), line);
+
+  // Show the error message.
+  int pos = loc - line + ident;
+
   fprintf(stderr, "%*s", pos, ""); // print pos spaces.
   fprintf(stderr, "^  ");
   vfprintf(stderr, fmt, ap);
@@ -241,8 +269,8 @@ static void convert_keywords(Token *tok)
       t->kind = TK_KEYWORD;
 }
 
-// Tokenize `p` and return new tokens
-Token *tokenize(char *p)
+// Tokenize a given string and return new tokens
+static Token *tokenize(char *filename, char *p)
 {
   current_input = p;
   Token head = {};
@@ -302,4 +330,52 @@ Token *tokenize(char *p)
   cur = cur->next = new_token(TK_EOF, p, p);
   convert_keywords(head.next);
   return head.next;
+}
+
+// Return the contents of a given file.
+static char *read_file(char *path)
+{
+  FILE *fp;
+
+  if (strcmp(path, "-") == 0)
+  {
+    // By convention, read from stdin if a given filename is "-".
+    fp = stdin;
+  }
+  else
+  {
+    fp = fopen(path, "r");
+    if (!fp)
+      error("cannot open %s: %s", path, strerror(errno));
+  }
+
+  char *buf;
+  size_t buflen;
+  FILE *out = open_memstream(&buf, &buflen);
+
+  // Read the entire file.
+  for (;;)
+  {
+    char buf2[4096];
+    int n = fread(&buf2, 1, sizeof(buf2), fp);
+    if (n == 0)
+      break;
+    fwrite(buf2, 1, n, out);
+  }
+
+  if (fp != stdin)
+    fclose(fp);
+
+  // Make sure that the last line is properly terminated with '\n'.
+  fflush(out);
+  if (buflen == 0 || buf[buflen - 1] != '\n')
+    fputc('\n', out);
+  fputc('\0', out);
+  fclose(out);
+  return buf;
+}
+
+Token *tokenize_file(char *path)
+{
+  return tokenize(path, read_file(path));
 }
