@@ -9,6 +9,7 @@ $(OBJS): chibicc.h
 
 test: chibicc
 			chmod +x test.sh;	./test.sh
+			chmod +x test-driver.sh; ./test-driver.sh
 
 clean:
 				rm -f chibicc *.o *~ tmp*

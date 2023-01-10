@@ -192,4 +192,4 @@ void add_type(Node *node);
 // codegen.c
 //
 
-void codegen(Obj *prog);
+void codegen(Obj *prog, FILE *out);
