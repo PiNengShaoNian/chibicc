@@ -102,6 +102,8 @@ static void store(Type *ty)
 
 static void gen_expr(Node *node)
 {
+  println("  .loc 1 %d", node->tok->line_no);
+
   switch (node->kind)
   {
   case ND_NUM:
@@ -194,6 +196,8 @@ static void gen_expr(Node *node)
 
 static void gen_stmt(Node *node)
 {
+  println("  .loc 1 %d", node->tok->line_no);
+
   switch (node->kind)
   {
   case ND_IF:

@@ -71,6 +71,7 @@ static Node *new_node(NodeKind kind, Token *tok)
 {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
+  node->tok = tok;
   return node;
 }
 
