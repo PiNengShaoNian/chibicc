@@ -10,6 +10,7 @@
 
 typedef struct Type Type;
 typedef struct Node Node;
+typedef struct Member Member;
 
 //
 // strings.c
@@ -98,6 +99,7 @@ typedef enum
   ND_LE,        // <=
   ND_ASSIGN,    // =
   ND_COMMA,     // ,
+  ND_MEMBER,    // .(struct member access)
   ND_ADDR,      // unary &
   ND_DEREF,     // unary *
   ND_RETURN,    // "return"
@@ -131,6 +133,9 @@ struct Node
   // Block or statement expression
   Node *body;
 
+  // Struct member access
+  Member *member;
+
   // Function call
   char *funcname;
   Node *args;
@@ -152,6 +157,7 @@ typedef enum
   TY_PTR,
   TY_FUNC,
   TY_ARRAY,
+  TY_STRUCT,
 } TypeKind;
 
 struct Type
@@ -175,10 +181,22 @@ struct Type
   // Array
   int array_len;
 
+  // Struct
+  Member *members;
+
   // Function type
   Type *return_ty;
   Type *params;
   Type *next;
+};
+
+// Struct member
+struct Member
+{
+  Member *next;
+  Type *ty;
+  Token *name;
+  int offset;
 };
 
 extern Type *ty_char;
