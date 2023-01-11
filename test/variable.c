@@ -2,7 +2,8 @@
 
 int g1, g2[4];
 
-int main() {
+int main()
+{
   ASSERT(3, ({ int a; a=3; a; }));
   ASSERT(3, ({ int a=3; a; }));
   ASSERT(8, ({ int a=3; int z=5; a+z; }));
@@ -46,6 +47,9 @@ int main() {
   ASSERT(2, ({ int x=2; { int x=3; } x; }));
   ASSERT(2, ({ int x=2; { int x=3; } int y=4; x; }));
   ASSERT(3, ({ int x=2; { x=3; } x; }));
+
+  ASSERT(15, ({ int x; int y; char z; char *a=&y; char *b=&z; b-a; }));
+  ASSERT(1, ({ int x; char y; int z; char *a=&y; char *b=&z; b-a; }));
 
   printf("OK\n");
   return 0;

@@ -53,12 +53,12 @@ static void gen_addr(Node *node)
     if (node->var->is_local)
     {
       // Local variable
-      println("  lea %d(%%rbp), %%rax", node->var->offset);
+      println("  lea %d(%%rbp), %%rax  # %s(local)", node->var->offset, node->var->name);
     }
     else
     {
       // Global variable
-      println("  lea %s(%%rip), %%rax", node->var->name);
+      println("  lea %s(%%rip), %%rax   # (global)", node->var->name);
     }
     return;
   case ND_DEREF:
@@ -70,7 +70,7 @@ static void gen_addr(Node *node)
     return;
   case ND_MEMBER:
     gen_addr(node->lhs);
-    println("  add $%d, %%rax", node->member->offset);
+    println("  add $%d, %%rax  # %s(member)", node->member->offset, node->member->name);
     return;
   }
 
@@ -274,6 +274,7 @@ static void assign_lvar_offsets(Obj *prog)
     for (Obj *var = fn->locals; var; var = var->next)
     {
       offset += var->ty->size;
+      offset = align_to(offset, var->ty->align);
       var->offset = -offset;
     }
 
