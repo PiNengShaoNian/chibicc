@@ -70,7 +70,7 @@ static void gen_addr(Node *node)
     return;
   case ND_MEMBER:
     gen_addr(node->lhs);
-    println("  add $%d, %%rax  # %s(member)", node->member->offset, node->member->name);
+    println("  add $%d, %%rax  # %s(member)", node->member->offset, strndup(node->member->name->loc, node->member->name->len));
     return;
   }
 
