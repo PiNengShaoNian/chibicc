@@ -929,8 +929,12 @@ static Token *function(Token *tok, Type *base_type)
 
   Obj *fn = new_gvar(get_ident(ty->name), ty);
   fn->is_function = true;
-  locals = NULL;
+  fn->is_definition = !consume(&tok, tok, ";");
 
+  if (!fn->is_definition)
+    return tok;
+
+  locals = NULL;
   enter_scope();
   create_param_lvars(ty->params);
   fn->params = locals;
