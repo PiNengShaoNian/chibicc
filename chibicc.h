@@ -150,6 +150,7 @@ struct Node
   int64_t val; // Used if kind == ND_NUM
 };
 
+Node *new_cast(Node *expr, Type *ty);
 Obj *parse(Token *tok);
 
 //
