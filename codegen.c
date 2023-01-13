@@ -133,6 +133,14 @@ static void store(Type *ty)
     println("  mov %%rax, (%%rdi)");
 }
 
+static void cmp_zero(Type *ty)
+{
+  if (is_integer(ty) && ty->size <= 4)
+    println("  cmp $0, %%eax");
+  else
+    println("  cmp $0, %%rax");
+}
+
 enum
 {
   I8,
@@ -173,6 +181,14 @@ static void cast(Type *from, Type *to)
 {
   if (to->kind == TY_VOID)
     return;
+
+  if (to->kind == TY_BOOL)
+  {
+    cmp_zero(from);
+    println("  setne %%al");
+    println("  movzx %%al, %%eax");
+    return;
+  }
 
   int t1 = getTypeId(from);
   int t2 = getTypeId(to);
