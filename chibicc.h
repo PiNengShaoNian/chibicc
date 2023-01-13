@@ -116,6 +116,7 @@ typedef enum
   ND_STMT_EXPR, // Statement expression
   ND_VAR,       // Variable
   ND_NUM,       // Integer
+  ND_CAST,      // Type cast
 } NodeKind;
 
 // AST node type
