@@ -186,6 +186,7 @@ static bool is_keyword(Token *tok)
       "static",
       "goto",
       "break",
+      "continue",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
