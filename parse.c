@@ -744,7 +744,7 @@ static Node *compound_stmt(Token **rest, Token *tok)
 
   while (!equal(tok, "}"))
   {
-    if (is_typename(tok))
+    if (is_typename(tok) && !equal(tok->next, ":"))
     {
       VarAttr attr = {};
       Type *base_type = declspec(&tok, tok, &attr);
