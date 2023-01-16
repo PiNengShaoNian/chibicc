@@ -202,6 +202,8 @@ static void gen_expr(Node *node)
 
   switch (node->kind)
   {
+  case ND_NULL_EXPR:
+    return;
   case ND_NUM:
     println("  mov $%ld,%%rax", node->val);
     return;
