@@ -17,7 +17,7 @@ test/%.exe: chibicc test/%.c
 
 test: $(TESTS)
 			for i in $^; do echo $$i; ./$$i || exit 1; echo; done
-			test/driver.sh
+			chmod +x test/driver.sh; test/driver.sh
 
 clean:
 				rm -rf chibicc tmp* $(TESTS) test/*.s test/*.exe
