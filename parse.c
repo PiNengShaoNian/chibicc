@@ -651,6 +651,18 @@ static Node *declaration(Token **rest, Token *tok, Type *base_type)
   return node;
 }
 
+static Token *skip_excess_element(Token *tok)
+{
+  if (equal(tok, "{"))
+  {
+    tok = skip_excess_element(tok->next);
+    return skip(tok, "}");
+  }
+
+  assign(&tok, tok);
+  return tok;
+}
+
 // initializer = "{" initializer ("," initializer)* "}"
 //             | assign
 static void initializer2(Token **rest, Token *tok, Initializer *init)
@@ -659,11 +671,15 @@ static void initializer2(Token **rest, Token *tok, Initializer *init)
   {
     tok = skip(tok, "{");
 
-    for (int i = 0; i < init->ty->array_len && !equal(tok, "}"); i++)
+    for (int i = 0; !consume(rest, tok, "}"); i++)
     {
       if (i > 0)
         tok = skip(tok, ",");
-      initializer2(&tok, tok, init->children[i]);
+
+      if (i < init->ty->array_len)
+        initializer2(&tok, tok, init->children[i]);
+      else
+        tok = skip_excess_element(tok);
     }
 
     *rest = skip(tok, "}");
