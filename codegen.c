@@ -498,7 +498,7 @@ static void assign_lvar_offsets(Obj *prog)
     for (Obj *var = fn->locals; var; var = var->next)
     {
       offset += var->ty->size;
-      offset = align_to(offset, var->ty->align);
+      offset = align_to(offset, var->align);
       var->offset = -offset;
     }
 
@@ -514,7 +514,7 @@ static void emit_data(Obj *prog)
       continue;
 
     println("  .global %s", var->name);
-    println("  .align %d", var->ty->align);
+    println("  .align %d", var->align);
 
     if (var->init_data)
     {

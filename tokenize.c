@@ -195,6 +195,8 @@ static bool is_keyword(Token *tok)
       "case",
       "default",
       "extern",
+      "_Alignof",
+      "_Alignas",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
