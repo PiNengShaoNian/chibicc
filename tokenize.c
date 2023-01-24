@@ -140,6 +140,7 @@ static int read_punct(char *p)
   static char *kw[] = {
       "<<=",
       ">>=",
+      "...",
       "==",
       "!=",
       "<=",
