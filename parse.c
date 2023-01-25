@@ -368,7 +368,7 @@ static void push_tag_scope(Token *tok, Type *ty)
 
 // declspec = ("void" | "_Bool" | "char" | "short" | "int" | "long"
 //            | "typedef" | "static" | "extern"
-//            | "signed"
+//            | "signed" | "unsigned"
 //            | struct-decl | union-decl | type-name
 //            | enum-specifier)+
 //
@@ -399,6 +399,7 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
     LONG = 1 << 10,
     OTHER = 1 << 12,
     SIGNED = 1 << 13,
+    UNSIGNED = 1 << 14,
   };
 
   Type *ty = ty_int;
@@ -480,6 +481,8 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
       counter += LONG;
     else if (equal(tok, "signed"))
       counter |= SIGNED;
+    else if (equal(tok, "unsigned"))
+      counter |= UNSIGNED;
     else
       unreachable();
 
@@ -495,16 +498,27 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
     case SIGNED + CHAR:
       ty = ty_char;
       break;
+    case UNSIGNED + CHAR:
+      ty = ty_uchar;
+      break;
     case SHORT:
     case SHORT + INT:
     case SIGNED + SHORT:
     case SIGNED + SHORT + INT:
       ty = ty_short;
       break;
+    case UNSIGNED + SHORT:
+    case UNSIGNED + SHORT + INT:
+      ty = ty_ushort;
+      break;
     case INT:
     case SIGNED:
     case SIGNED + INT:
       ty = ty_int;
+      break;
+    case UNSIGNED:
+    case UNSIGNED + INT:
+      ty = ty_uint;
       break;
     case LONG:
     case LONG + INT:
@@ -515,6 +529,12 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
     case SIGNED + LONG + LONG:
     case SIGNED + LONG + LONG + INT:
       ty = ty_long;
+      break;
+    case UNSIGNED + LONG:
+    case UNSIGNED + LONG + INT:
+    case UNSIGNED + LONG + LONG:
+    case UNSIGNED + LONG + LONG + INT:
+      ty = ty_ulong;
       break;
     default:
       error_tok(tok, "invalid type");
@@ -1198,6 +1218,7 @@ static bool is_typename(Token *tok)
       "extern",
       "_Alignas",
       "signed",
+      "unsigned",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)

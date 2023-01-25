@@ -93,15 +93,17 @@ static void load(Type *ty)
     return;
   }
 
+  char *insn = ty->is_unsigned ? "movz" : "movs";
+
   // When we load a char or a short value to a register, we always
   // extend them to the size of int, so we can assume the lower half of
   // a register always contains a valid value. The upper half of a
   // register for char, short and int may contain garbage. When we load
   // a long value to a register, it simply occupies the entire register.
   if (ty->size == 1)
-    println("  movsbl (%%rax), %%eax");
+    println("  %sbl (%%rax), %%eax", insn);
   else if (ty->size == 2)
-    println("  movswl (%%rax), %%eax");
+    println("  %swl (%%rax), %%eax", insn);
   else if (ty->size == 4)
     println("  movsxd (%%rax), %%rax");
   else
@@ -146,7 +148,11 @@ enum
   I8,
   I16,
   I32,
-  I64
+  I64,
+  U8,
+  U16,
+  U32,
+  U64
 };
 
 static int getTypeId(Type *ty)
@@ -154,27 +160,36 @@ static int getTypeId(Type *ty)
   switch (ty->kind)
   {
   case TY_CHAR:
-    return I8;
+    return ty->is_unsigned ? U8 : I8;
   case TY_SHORT:
-    return I16;
+    return ty->is_unsigned ? U16 : I16;
   case TY_INT:
-    return I32;
+    return ty->is_unsigned ? U32 : I32;
+  case TY_LONG:
+    return ty->is_unsigned ? U64 : I64;
   }
 
-  return I64;
+  return U64;
 }
 
 // The table for type casts
 static char i32i8[] = "movsbl %al, %eax";
+static char i32u8[] = "movzbl %al, %eax";
 static char i32i16[] = "movswl %ax, %eax";
+static char i32u16[] = "movzwl %ax, %eax";
 static char i32i64[] = "movsxd %eax, %rax";
+static char u32i64[] = "mov %eax, %eax";
 
-// the table for type casts
 static char *cast_table[][10] = {
-    {NULL, NULL, NULL, i32i64},    // i8
-    {i32i8, NULL, NULL, i32i64},   // i16
-    {i32i8, i32i16, NULL, i32i64}, // i32
-    {i32i8, i32i16, NULL, NULL},   // i64
+    // i8   i16     i32   i64     u8     u16     u32   u64
+    {NULL, NULL, NULL, i32i64, i32u8, i32u16, NULL, i32i64},    // i8
+    {i32i8, NULL, NULL, i32i64, i32u8, i32u16, NULL, i32i64},   // i16
+    {i32i8, i32i16, NULL, i32i64, i32u8, i32u16, NULL, i32i64}, // i32
+    {i32i8, i32i16, NULL, NULL, i32u8, i32u16, NULL, NULL},     // i64
+    {i32i8, NULL, NULL, i32i64, NULL, NULL, NULL, i32i64},      // u8
+    {i32i8, i32i16, NULL, i32i64, i32u8, NULL, NULL, i32i64},   // u16
+    {i32i8, i32i16, NULL, u32i64, i32u8, i32u16, NULL, u32i64}, // u32
+    {i32i8, i32i16, NULL, NULL, i32u8, i32u16, NULL, NULL},     // u64
 };
 
 static void cast(Type *from, Type *to)
@@ -337,10 +352,16 @@ static void gen_expr(Node *node)
       println("  movzx %%al, %%eax");
       return;
     case TY_CHAR:
-      println("  movsbl %%al, %%eax");
+      if (node->ty->is_unsigned)
+        println("  movzbl %%al, %%eax");
+      else
+        println("  movsbl %%al, %%eax");
       return;
     case TY_SHORT:
-      println("  movswl %%ax, %%eax");
+      if (node->ty->is_unsigned)
+        println("  movzwl %%ax, %%eax");
+      else
+        println("  movswl %%ax, %%eax");
       return;
     }
     return;
@@ -352,16 +373,18 @@ static void gen_expr(Node *node)
   gen_expr(node->lhs);
   pop("%rdi");
 
-  char *ax, *di;
+  char *ax, *di, *dx;
   if (node->lhs->ty->kind == TY_LONG || node->lhs->ty->base)
   {
     ax = "%rax";
     di = "%rdi";
+    dx = "%rdx";
   }
   else
   {
     ax = "%eax";
     di = "%edi";
+    dx = "%edx";
   }
 
   switch (node->kind)
@@ -377,11 +400,19 @@ static void gen_expr(Node *node)
     return;
   case ND_DIV:
   case ND_MOD:
-    if (node->lhs->ty->size == 8)
-      println("  cqo");
+    if (node->ty->is_unsigned)
+    {
+      println("  mov $0, %s", dx);
+      println("  div %s", di);
+    }
     else
-      println("  cdq");
-    println("  idiv %s", di);
+    {
+      if (node->lhs->ty->size == 8)
+        println("  cqo");
+      else
+        println("  cdq");
+      println("  idiv %s", di);
+    }
 
     if (node->kind == ND_MOD)
       println("  mov %%rdx, %%rax");
@@ -405,9 +436,19 @@ static void gen_expr(Node *node)
     else if (node->kind == ND_NE)
       println("  setne %%al");
     else if (node->kind == ND_LT)
-      println("  setl %%al");
+    {
+      if (node->lhs->ty->is_unsigned)
+        println("  setb %%al");
+      else
+        println("  setl %%al");
+    }
     else if (node->kind == ND_LE)
-      println("  setle %%al");
+    {
+      if (node->lhs->ty->is_unsigned)
+        println("  setbe %%al");
+      else
+        println("  setle %%al");
+    }
 
     println("  movzb %%al, %%rax");
     return;
@@ -417,8 +458,8 @@ static void gen_expr(Node *node)
     return;
   case ND_SHR:
     println("  mov %%rdi, %%rcx");
-    if (node->ty->size == 8)
-      println("  sar %%cl, %s", ax);
+    if (node->lhs->ty->is_unsigned)
+      println("  shr %%cl, %s", ax);
     else
       println("  sar %%cl, %s", ax);
     return;
