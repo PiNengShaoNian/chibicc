@@ -368,6 +368,7 @@ static void push_tag_scope(Token *tok, Type *ty)
 
 // declspec = ("void" | "_Bool" | "char" | "short" | "int" | "long"
 //            | "typedef" | "static" | "extern"
+//            | "signed"
 //            | struct-decl | union-decl | type-name
 //            | enum-specifier)+
 //
@@ -397,6 +398,7 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
     INT = 1 << 8,
     LONG = 1 << 10,
     OTHER = 1 << 12,
+    SIGNED = 1 << 13,
   };
 
   Type *ty = ty_int;
@@ -476,6 +478,8 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
       counter += INT;
     else if (equal(tok, "long"))
       counter += LONG;
+    else if (equal(tok, "signed"))
+      counter |= SIGNED;
     else
       unreachable();
 
@@ -488,19 +492,28 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
       ty = ty_bool;
       break;
     case CHAR:
+    case SIGNED + CHAR:
       ty = ty_char;
       break;
     case SHORT:
     case SHORT + INT:
+    case SIGNED + SHORT:
+    case SIGNED + SHORT + INT:
       ty = ty_short;
       break;
     case INT:
+    case SIGNED:
+    case SIGNED + INT:
       ty = ty_int;
       break;
     case LONG:
     case LONG + INT:
     case LONG + LONG:
     case LONG + LONG + INT:
+    case SIGNED + LONG:
+    case SIGNED + LONG + INT:
+    case SIGNED + LONG + LONG:
+    case SIGNED + LONG + LONG + INT:
       ty = ty_long;
       break;
     default:
@@ -1184,6 +1197,7 @@ static bool is_typename(Token *tok)
       "static",
       "extern",
       "_Alignas",
+      "signed",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
