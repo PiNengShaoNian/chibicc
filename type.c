@@ -40,6 +40,7 @@ Type *pointer_to(Type *base)
 {
   Type *ty = new_type(TY_PTR, 8, 8);
   ty->base = base;
+  ty->is_unsigned = true;
   return ty;
 }
 
