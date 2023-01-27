@@ -599,7 +599,7 @@ static Type *func_params(Token **rest, Token *tok, Type *ty)
     // context. For example *argv[] is converted to **argv by this.
     if (ty2->kind == TY_ARRAY)
     {
-      Token *name = ty->name;
+      Token *name = ty2->name;
       ty2 = pointer_to(ty2->base);
       ty2->name = name;
     }
@@ -617,9 +617,12 @@ static Type *func_params(Token **rest, Token *tok, Type *ty)
   return ty;
 }
 
-// array-dimensions = num ? "]" type-suffix
+// array-dimensions = ("static" | "restrict")* const_expr ? "]" type-suffix
 static Type *array_dimensions(Token **rest, Token *tok, Type *ty)
 {
+  while (equal(tok, "static") || equal(tok, "restrict"))
+    tok = tok->next;
+
   if (equal(tok, "]"))
   {
     ty = type_suffix(rest, tok->next, ty);
