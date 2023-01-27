@@ -201,6 +201,14 @@ static bool is_keyword(Token *tok)
       "do",
       "signed",
       "unsigned",
+      "const",
+      "volatile",
+      "auto",
+      "register",
+      "restrict",
+      "__restrict",
+      "__restrict__",
+      "_Noreturn",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
