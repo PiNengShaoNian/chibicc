@@ -76,6 +76,7 @@ struct Obj
   Obj *next;
   char *name;    // Variable name
   Type *ty;      // Type
+  Token *tok;    // representative token
   bool is_local; // local or global/function
   int align;     // alignment
 
@@ -232,9 +233,9 @@ typedef enum
 struct Type
 {
   TypeKind kind;
-  int size;  // sizeof() value
-  int align; // alignment
-  bool is_unsigned;   // unsigned or signed
+  int size;         // sizeof() value
+  int align;        // alignment
+  bool is_unsigned; // unsigned or signed
 
   // Pointer-to or array-of type. We intentionally use the same member
   // to represent pointer/array duality in C.
@@ -248,6 +249,7 @@ struct Type
 
   // Declaration
   Token *name;
+  Token *name_pos;
 
   // Array
   int array_len;
