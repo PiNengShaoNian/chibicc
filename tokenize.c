@@ -209,6 +209,8 @@ static bool is_keyword(Token *tok)
       "__restrict",
       "__restrict__",
       "_Noreturn",
+      "float",
+      "double",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
