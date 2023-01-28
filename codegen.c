@@ -471,7 +471,6 @@ static void gen_expr(Node *node)
         pop(argreg64[gp++]);
     }
 
-    println("  mov $0, %%rax");
     if (depth % 2 == 0)
     {
       println("  call %s@plt", node->funcname);

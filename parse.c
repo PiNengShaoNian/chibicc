@@ -2425,6 +2425,12 @@ static Node *funccall(Token **rest, Token *tok)
       arg = new_cast(arg, param_ty);
       param_ty = param_ty->next;
     }
+    else if (arg->ty->kind == TY_FLOAT)
+    {
+      // If parameter type is omitted (e.g. in "..."), float
+      // arguments are promoted to double.
+      arg = new_cast(arg, ty_double);
+    }
 
     cur = cur->next = arg;
   }
