@@ -2353,6 +2353,7 @@ static Node *struct_ref(Node *lhs, Token *tok)
 
   Node *node = new_unary(ND_MEMBER, lhs, tok);
   node->member = get_struct_member(lhs->ty, tok);
+  return node;
 }
 
 // Convert A++ to `(typeof A)((A += 1) - 1)`
