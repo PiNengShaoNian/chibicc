@@ -212,11 +212,14 @@ void add_type(Node *node)
     node->ty = node->member->ty;
     return;
   case ND_ADDR:
-    if (node->lhs->ty->kind == TY_ARRAY)
-      node->ty = pointer_to(node->lhs->ty->base);
+  {
+    Type *ty = node->lhs->ty;
+    if (ty->kind == TY_ARRAY)
+      node->ty = pointer_to(ty->base);
     else
-      node->ty = pointer_to(node->lhs->ty);
+      node->ty = pointer_to(ty);
     return;
+  }
   case ND_DEREF:
     if (!node->lhs->ty->base)
       error_tok(node->tok, "invalid pointer dereference");
