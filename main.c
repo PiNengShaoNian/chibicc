@@ -206,8 +206,9 @@ static void print_tokens(Token *tok)
   {
     if (line > 1 && tok->at_bol)
       fprintf(out, "\n");
-
-    fprintf(out, " %.*s", tok->len, tok->loc);
+    if (tok->has_space && !tok->at_bol)
+      fprintf(out, " ");
+    fprintf(out, "%.*s", tok->len, tok->loc);
     line++;
   }
 

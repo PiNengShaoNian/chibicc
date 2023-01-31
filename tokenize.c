@@ -9,6 +9,9 @@ static File **input_files;
 // True if the current position is at the beginning of a line
 static bool at_bol;
 
+// True if the current position follows a space character
+static bool has_space;
+
 // Reports an error and exit
 void error(char *fmt, ...)
 {
@@ -119,7 +122,9 @@ static Token *new_token(TokenKind kind, char *start, char *end)
   tok->len = end - start;
   tok->file = current_file;
   tok->at_bol = at_bol;
-  at_bol = false;
+  tok->has_space = has_space;
+
+  at_bol = has_space = false;
   return tok;
 }
 
@@ -523,6 +528,7 @@ static Token *tokenize(File *file)
   Token *cur = &head;
 
   at_bol = true;
+  has_space = false;
 
   while (*p)
   {
@@ -532,6 +538,7 @@ static Token *tokenize(File *file)
       p += 2;
       while (*p != '\n')
         p++;
+      has_space = true;
       continue;
     }
 
@@ -542,6 +549,7 @@ static Token *tokenize(File *file)
       if (!q)
         error_at(p, "unclosed block comment");
       p = q + 2;
+      has_space = true;
       continue;
     }
 
@@ -550,6 +558,7 @@ static Token *tokenize(File *file)
     {
       p++;
       at_bol = true;
+      has_space = false;
       continue;
     }
 
@@ -557,6 +566,7 @@ static Token *tokenize(File *file)
     if (isspace(*p))
     {
       p++;
+      has_space = true;
       continue;
     }
 
