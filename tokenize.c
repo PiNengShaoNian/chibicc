@@ -519,7 +519,7 @@ static Token *read_char_literal(char *start)
 }
 
 // Tokenize a given string and return new tokens
-static Token *tokenize(File *file)
+Token *tokenize(File *file)
 {
   current_file = file;
 
@@ -671,7 +671,7 @@ File **get_input_files(void)
   return input_files;
 }
 
-static File *new_file(char *name, int file_no, char *contents)
+File *new_file(char *name, int file_no, char *contents)
 {
   File *file = calloc(1, sizeof(File));
   file->name = name;
