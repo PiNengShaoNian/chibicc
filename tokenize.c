@@ -497,9 +497,9 @@ static void add_line_numbers(Token *tok)
   } while (*p++);
 }
 
-static Token *read_char_literal(char *start)
+static Token *read_char_literal(char *start, char *quote)
 {
-  char *p = start + 1;
+  char *p = quote + 1;
   if (*p == '\0')
     error_at(start, "unclosed char literal");
 
@@ -590,8 +590,16 @@ Token *tokenize(File *file)
     // Character literal
     if (*p == '\'')
     {
-      cur = cur->next = read_char_literal(p);
+      cur = cur->next = read_char_literal(p, p);
       p += cur->len;
+      continue;
+    }
+
+    // Wide character literal
+    if (startswith(p, "L'"))
+    {
+      cur = cur->next = read_char_literal(p, p + 1);
+      p = cur->loc + cur->len;
       continue;
     }
 
