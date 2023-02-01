@@ -617,6 +617,8 @@ static Token *subst(Token *tok, MacroArg *args)
     if (arg)
     {
       Token *t = preprocess2(arg->tok);
+      t->at_bol = tok->at_bol;
+      t->has_space = tok->has_space;
       for (; t->kind != TK_EOF; t = t->next)
         cur = cur->next = copy_token(t);
       tok = tok->next;
@@ -650,6 +652,8 @@ static bool expand_macro(Token **rest, Token *tok)
     Hideset *hs = hideset_union(tok->hideset, new_hideset(m->name));
     Token *body = add_hideset(m->body, hs);
     *rest = append(body, tok->next);
+    (*rest)->at_bol = tok->at_bol;
+    (*rest)->has_space = tok->has_space;
     return true;
   }
 
