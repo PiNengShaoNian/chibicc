@@ -21,6 +21,10 @@ int add6(int a, int b, int c, int d, int e, int f) {
   return a + b + c + d + e + f;
 }
 
+char *func_fn(void) {
+  return __func__;
+}
+
 int main() {
   ASSERT(5, include1);
   ASSERT(7, include2);
@@ -361,6 +365,10 @@ int main() {
 
 #define M14(x, ...) x
   ASSERT(5, M14(5));
+
+  ASSERT(5, sizeof(__func__));
+  ASSERT(0, strcmp("main", __func__));
+  ASSERT(0, strcmp("func_fn", func_fn()));
 
   printf("OK\n");
   return 0;
