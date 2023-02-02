@@ -178,8 +178,8 @@ static void store(Type *ty)
   case TY_UNION:
     for (int i = 0; i < ty->size; i++)
     {
-      println("  mov  %d(%%rax), %%r8b", i);
-      println("  mov  %%r8b, %d(%%rdi)", i);
+      println("  mov %d(%%rax), %%r8b", i);
+      println("  mov %%r8b, %d(%%rdi)", i);
     }
     return;
   case TY_FLOAT:
@@ -376,7 +376,7 @@ static void gen_expr(Node *node)
       println("  movq %%rax, %%xmm0");
       return;
     }
-    println("  mov $%ld,%%rax", node->val);
+    println("  mov $%ld, %%rax", node->val);
     return;
   }
   case ND_NEG:
