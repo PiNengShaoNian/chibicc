@@ -689,10 +689,25 @@ static void gen_expr(Node *node)
     println("  neg %%rax");
     return;
   case ND_VAR:
-  case ND_MEMBER:
     gen_addr(node);
     load(node->ty);
     return;
+  case ND_MEMBER:
+  {
+    gen_addr(node);
+    load(node->ty);
+
+    Member *mem = node->member;
+    if (mem->is_bitfield)
+    {
+      println("  shl $%d, %%rax", 64 - mem->bit_width - mem->bit_offset);
+      if (mem->ty->is_unsigned)
+        println("  shr $%d, %%rax", 64 - mem->bit_width);
+      else
+        println("  sar $%d, %%rax", 64 - mem->bit_width);
+    }
+    return;
+  }
   case ND_DEREF:
     gen_expr(node->lhs);
     load(node->ty);
@@ -704,6 +719,25 @@ static void gen_expr(Node *node)
     gen_addr(node->lhs);
     push();
     gen_expr(node->rhs);
+
+    if (node->lhs->kind == ND_MEMBER && node->lhs->member->is_bitfield)
+    {
+      // If the lhs is a bitfield, we need to read the current value
+      // form memory and merge it with a new value.
+      Member *mem = node->lhs->member;
+      println("  mov %%rax, %%rdi");
+      println("  and $%ld, %%rdi", (1L << mem->bit_width) - 1);
+      println("  shl $%d, %%rdi", mem->bit_offset);
+
+      println("  mov (%%rsp), %%rax");
+      load(mem->ty);
+
+      long mask = ((1L << mem->bit_width) - 1) << mem->bit_offset;
+      println("  mov $%ld, %%r9", ~mask);
+      println("  and %%r9, %%rax");
+      println("  or %%rdi, %%rax");
+    }
+
     store(node->ty);
     return;
   case ND_STMT_EXPR:
@@ -1330,7 +1364,7 @@ static void emit_text(Obj *prog)
       // va_elem
       println("  movl $%d, %d(%%rbp)", gp * 8, off);          // gp_offset
       println("  movl $%d, %d(%%rbp)", fp * 8 + 48, off + 4); // fp_offset
-      println("  movq %%rbp, %d(%%rbp)", off + 8);             // overflow_arg_area
+      println("  movq %%rbp, %d(%%rbp)", off + 8);            // overflow_arg_area
       println("  addq $16, %d(%%rbp)", off + 8);
       println("  movq %%rbp, %d(%%rbp)", off + 16); // reg_save_area
       println("  addq $%d, %d(%%rbp)", off + 24, off + 16);
