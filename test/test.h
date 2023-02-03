@@ -2,6 +2,7 @@
 
 void assert(int expected, int actual, char *code);
 int printf(char *fmt, ...);
+int vsprintf(char *buf, char *fmt, void *ap);
 int sprintf(char *buf, char *fmt, ...);
 int strcmp(char *p, char *q);
 int strncmp(char *p, char *q, long n);
