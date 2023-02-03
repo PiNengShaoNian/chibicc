@@ -2392,7 +2392,13 @@ static Type *struct_decl(Token **rest, Token *tok)
 
   for (Member *mem = ty->members; mem; mem = mem->next)
   {
-    if (mem->is_bitfield)
+    if (mem->is_bitfield && mem->bit_width == 0)
+    {
+      // Zero-width anonymous bitfield has a special meaning.
+      // It affects only alignment.
+      bits = align_to(bits, mem->ty->size * 8);
+    }
+    else if (mem->is_bitfield)
     {
       int sz = mem->ty->size;
       if (bits / (sz * 8) != (bits + mem->bit_width - 1) / (sz * 8))
