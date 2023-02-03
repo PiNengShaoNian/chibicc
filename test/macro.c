@@ -377,6 +377,10 @@ int main() {
   ASSERT(0, strcmp("main", __FUNCTION__));
   ASSERT(0, strcmp("function_fn", function_fn()));
 
+#define CONCAT(x,y) x##y
+  ASSERT(5, ({ int f0zz=5; CONCAT(f,0zz); }));
+  ASSERT(5, ({ CONCAT(4,.57) + 0.5; }));
+
   printf("OK\n");
   return 0;
 }
