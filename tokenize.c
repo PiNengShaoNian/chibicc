@@ -599,6 +599,17 @@ static Token *read_char_literal(char *start, char *quote, Type *ty)
   return tok;
 }
 
+Token *tokenize_string_literal(Token *tok, Type *base_type)
+{
+  Token *t;
+  if (base_type->size == 2)
+    t = read_utf16_string_literal(tok->loc, tok->loc);
+  else
+    t = read_utf32_string_literal(tok->loc, tok->loc, base_type);
+  t->next = tok->next;
+  return t;
+}
+
 // Tokenize a given string and return new tokens
 Token *tokenize(File *file)
 {
