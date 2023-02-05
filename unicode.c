@@ -108,6 +108,8 @@ bool is_ident1(uint32_t c)
         'z',
         'A',
         'Z',
+        '$',
+        '$',
         0x00A8,
         0x00A8,
         0x00AA,
@@ -219,6 +221,8 @@ bool is_ident2(uint32_t c)
     static uint32_t range[] = {
         '0',
         '9',
+        '$',
+        '$',
         0x0300,
         0x036F,
         0x1DC0,
