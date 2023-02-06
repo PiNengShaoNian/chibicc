@@ -59,6 +59,10 @@ struct Initializer
   // If it's an initializer for an aggregate type (e.g. array or struct),
   // `children` has initializers for its children.
   Initializer **children;
+
+  // Only one member can be initialized for a union.
+  // `mem` is used to clarify which member is initialized.
+  Member *mem;
 };
 
 // For local variable initializer.
@@ -999,6 +1003,14 @@ static void designation(Token **rest, Token *tok, Initializer *init)
     return;
   }
 
+  if (equal(tok, ".") && init->ty->kind == TY_UNION)
+  {
+    Member *mem = struct_designator(&tok, tok, init->ty);
+    init->mem = mem;
+    designation(rest, tok, init->children[mem->idx]);
+    return;
+  }
+
   if (equal(tok, "="))
     tok = tok->next;
   initializer2(rest, tok, init);
@@ -1160,7 +1172,19 @@ static void struct_initializer2(Token **rest, Token *tok, Initializer *init, Mem
 static void union_initializer(Token **rest, Token *tok, Initializer *init)
 {
   // Unlike structs, union initializers toke only one initializer,
-  // and that initializes the first union member.
+  // and that initializes the first union member by default.
+  // You can initialize other member using a designated initializer.
+  if (equal(tok, "{") && equal(tok->next, "."))
+  {
+    Member *mem = struct_designator(&tok, tok->next, init->ty);
+    init->mem = mem;
+    designation(&tok, tok, init->children[mem->idx]);
+    *rest = skip(tok, "}");
+    return;
+  }
+
+  init->mem = init->ty->members;
+
   if (equal(tok, "{"))
   {
     initializer2(&tok, tok->next, init->children[0]);
@@ -1323,8 +1347,9 @@ static Node *create_lvar_init(Initializer *init, Type *ty, InitDesg *desg, Token
 
   if (ty->kind == TY_UNION)
   {
-    InitDesg desg2 = {desg, 0, ty->members};
-    return create_lvar_init(init->children[0], ty->members->ty, &desg2, tok);
+    Member *mem = init->mem ? init->mem : ty->members;
+    InitDesg desg2 = {desg, 0, mem};
+    return create_lvar_init(init->children[mem->idx], mem->ty, &desg2, tok);
   }
 
   if (!init->expr)
@@ -1423,7 +1448,12 @@ static Relocation *write_gvar_data(Relocation *cur, Initializer *init, Type *ty,
   }
 
   if (ty->kind == TY_UNION)
-    return write_gvar_data(cur, init->children[0], ty->members->ty, buf, offset);
+  {
+    if (!init->mem)
+      return cur;
+
+    return write_gvar_data(cur, init->children[init->mem->idx], init->mem->ty, buf, offset);
+  }
 
   if (!init->expr)
     return cur;
