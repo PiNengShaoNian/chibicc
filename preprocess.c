@@ -609,6 +609,27 @@ static Token *subst(Token *tok, MacroArg *args)
       continue;
     }
 
+    // [GUN] if __VA_ARG__ is empty, `, ##__VA_ARGS__` is expanded
+    // to the empty list. Otherwise, its expand to ',' and
+    // __VA_ARGS.
+    if (equal(tok, ",") && equal(tok->next, "##"))
+    {
+      MacroArg *arg = find_arg(args, tok->next->next);
+      if (arg && !strcmp(arg->name, "__VA_ARGS__"))
+      {
+        if (arg->tok->kind == TK_EOF)
+        {
+          tok = tok->next->next->next;
+        }
+        else
+        {
+          cur = cur->next = copy_token(tok);
+          tok = tok->next->next;
+        }
+        continue;
+      }
+    }
+
     if (equal(tok, "##"))
     {
       if (cur == &head)
