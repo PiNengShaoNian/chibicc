@@ -390,6 +390,8 @@ int main() {
 
   ASSERT(24, strlen(__TIMESTAMP__));
 
+  ASSERT(0, strcmp(__BASE_FILE__, "test/macro.c"));
+
   printf("OK\n");
   return 0;
 }
