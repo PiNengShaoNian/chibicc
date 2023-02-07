@@ -209,6 +209,7 @@ typedef enum
   ND_NUM,       // Integer
   ND_CAST,      // Type cast
   ND_MEMZERO,   // Zero-clear a stack variable
+  ND_ASM,       // "asm"
 } NodeKind;
 
 // AST node type
@@ -252,6 +253,9 @@ struct Node
   // Switch-cases
   Node *case_next;
   Node *default_case;
+
+  // "asm" string literal
+  char *asm_str;
 
   // Variable
   Obj *var;
