@@ -234,6 +234,8 @@ static bool is_keyword(Token *tok)
       "double",
       "typeof",
       "asm",
+      "_Thread_local",
+      "__thread",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)

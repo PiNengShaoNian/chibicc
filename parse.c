@@ -39,6 +39,7 @@ typedef struct
   bool is_static;
   bool is_extern;
   bool is_inline;
+  bool is_tls;
   int align;
 } VarAttr;
 
@@ -391,6 +392,7 @@ static void push_tag_scope(Token *tok, Type *ty)
 
 // declspec = ("void" | "_Bool" | "char" | "short" | "int" | "long"
 //            | "typedef" | "static" | "extern" | "inline"
+//            | "_Thread_local" | "__thread"
 //            | "signed" | "unsigned"
 //            | struct-decl | union-decl | type-name
 //            | enum-specifier | typeof-specifier
@@ -436,7 +438,7 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
   {
     // Handle storage class specifiers.
     if (equal(tok, "typedef") || equal(tok, "static") || equal(tok, "extern") ||
-        equal(tok, "inline"))
+        equal(tok, "inline") || equal(tok, "_Thread_local") || equal(tok, "__thread"))
     {
       if (!attr)
         error_tok(tok, "storage class specifier is not allowed in this context");
@@ -447,11 +449,15 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
         attr->is_static = true;
       else if (equal(tok, "extern"))
         attr->is_extern = true;
-      else
+      else if (equal(tok, "inline"))
         attr->is_inline = true;
+      else
+        attr->is_tls = true;
 
-      if (attr->is_typedef && attr->is_static + attr->is_extern + attr->is_inline > 1)
-        error_tok(tok, "typedef may not be used together with static, extern or inline");
+      if (attr->is_typedef &&
+          attr->is_static + attr->is_extern + attr->is_inline + attr->is_tls > 1)
+        error_tok(tok, "typedef may not be used together with static,"
+                       " extern, inline, __thread or _Thread_local");
 
       tok = tok->next;
       continue;
@@ -1575,6 +1581,8 @@ static bool is_typename(Token *tok)
       "double",
       "typeof",
       "inline",
+      "_Thread_local",
+      "__thread",
   };
 
   for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
@@ -3296,12 +3304,13 @@ static Token *global_variable(Token *tok, Type *base_type, VarAttr *attr)
     Obj *var = new_gvar(get_ident(ty->name), ty);
     var->is_definition = !attr->is_extern;
     var->is_static = attr->is_static;
+    var->is_tls = attr->is_tls;
     if (attr->align)
       var->align = attr->align;
 
     if (equal(tok, "="))
       gvar_initializer(&tok, tok->next, var);
-    else if (!attr->is_extern)
+    else if (!attr->is_extern && !attr->is_tls)
       var->is_tentative = true;
   }
 
