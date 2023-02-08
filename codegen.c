@@ -69,6 +69,13 @@ static void gen_addr(Node *node)
   switch (node->kind)
   {
   case ND_VAR:
+    // Variable-length array, which is always local.
+    if (node->var->ty->kind == TY_VLA)
+    {
+      println("  mov %d(%%rbp), %%rax", node->var->offset);
+      return;
+    }
+
     // Local variable
     if (node->var->is_local)
     {
@@ -143,6 +150,9 @@ static void gen_addr(Node *node)
       return;
     }
     break;
+  case ND_VLA_PTR:
+    println("  lea %d(%%rbp), %%rax", node->var->offset);
+    return;
   }
 
   error_tok(node->tok, "not an lvalue");
@@ -157,6 +167,7 @@ static void load(Type *ty)
   case TY_STRUCT:
   case TY_UNION:
   case TY_FUNC:
+  case TY_VLA:
     // If it is an array; do not attempt to load value to the
     // register because in general we can't load an entire array to a
     // register. As a result, the result of an evaluation of an array
