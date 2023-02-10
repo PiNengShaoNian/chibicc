@@ -1504,7 +1504,7 @@ static void emit_data(Obj *prog)
       {
         if (rel && rel->offset == pos)
         {
-          println("  .quad %s%+ld", rel->label, rel->addend);
+          println("  .quad %s%+ld", *rel->label, rel->addend);
           rel = rel->next;
           pos += 8;
         }

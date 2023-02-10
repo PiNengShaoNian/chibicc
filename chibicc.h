@@ -175,7 +175,7 @@ struct Relocation
 {
   Relocation *next;
   int offset;
-  char *label;
+  char **label;
   long addend;
 };
 
