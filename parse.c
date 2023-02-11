@@ -1,25 +1,14 @@
 #include "chibicc.h"
 
 // Scope for local or global variables or typedefs.
-typedef struct VarScope VarScope;
-struct VarScope
+// or enum constants.
+typedef struct
 {
-  VarScope *next;
-  char *name;
   Obj *var;
   Type *type_def;
   Type *enum_ty;
   int enum_val;
-};
-
-// Scope for struct, union or enum tags
-typedef struct TagScope TagScope;
-struct TagScope
-{
-  TagScope *next;
-  char *name;
-  Type *ty;
-};
+} VarScope;
 
 // Represents a block scope.
 typedef struct Scope Scope;
@@ -28,8 +17,8 @@ struct Scope
   Scope *next;
   // C has two block scopes; one is for variables/typedefs and the other is
   // for struct/union/enum tags.
-  VarScope *vars;
-  TagScope *tags;
+  HashMap vars;
+  HashMap tags;
 };
 
 // Variable attributes such as typedef or extern.
@@ -175,11 +164,9 @@ static VarScope *find_var(Token *tok)
 {
   for (Scope *sc = scope; sc; sc = sc->next)
   {
-    for (VarScope *sc2 = sc->vars; sc2; sc2 = sc2->next)
-    {
-      if (equal(tok, sc2->name))
-        return sc2;
-    }
+    VarScope *sc2 = hashmap_get2(&sc->vars, tok->loc, tok->len);
+    if (sc2)
+      return sc2;
   }
 
   return NULL;
@@ -188,9 +175,11 @@ static VarScope *find_var(Token *tok)
 static Type *find_tag(Token *tok)
 {
   for (Scope *sc = scope; sc; sc = sc->next)
-    for (TagScope *sc2 = sc->tags; sc2; sc2 = sc2->next)
-      if (equal(tok, sc2->name))
-        return sc2->ty;
+  {
+    Type *ty = hashmap_get2(&sc->tags, tok->loc, tok->len);
+    if (ty)
+      return ty;
+  }
   return NULL;
 }
 
@@ -247,9 +236,7 @@ Node *new_cast(Node *expr, Type *ty)
 static VarScope *push_scope(char *name)
 {
   VarScope *sc = calloc(1, sizeof(VarScope));
-  sc->name = name;
-  sc->next = scope->vars;
-  scope->vars = sc;
+  hashmap_put(&scope->vars, name, sc);
   return sc;
 }
 
@@ -393,11 +380,7 @@ static Type *find_typedef(Token *tok)
 
 static void push_tag_scope(Token *tok, Type *ty)
 {
-  TagScope *sc = calloc(1, sizeof(TagScope));
-  sc->name = strndup(tok->loc, tok->len);
-  sc->ty = ty;
-  sc->next = scope->tags;
-  scope->tags = sc;
+  hashmap_put2(&scope->tags, tok->loc, tok->len, ty);
 }
 
 // declspec = ("void" | "_Bool" | "char" | "short" | "int" | "long"
@@ -2847,13 +2830,11 @@ static Type *struct_union_decl(Token **rest, Token *tok)
   {
     // If this is a redefinition, overwrite a previous type.
     // Otherwise, register the struct type.
-    for (TagScope *sc = scope->tags; sc; sc = sc->next)
+    Type *ty2 = hashmap_get2(&scope->tags, tag->loc, tag->len);
+    if (ty2)
     {
-      if (equal(tag, sc->name))
-      {
-        *sc->ty = *ty;
-        return sc->ty;
-      }
+      *ty2 = *ty;
+      return ty2;
     }
 
     push_tag_scope(tag, ty);
@@ -3414,9 +3395,9 @@ static Obj *find_func(char *name)
   while (sc->next)
     sc = sc->next;
 
-  for (VarScope *sc2 = sc->vars; sc2; sc2 = sc2->next)
-    if (!strcmp(sc2->name, name) && sc2->var && sc2->var->is_function)
-      return sc2->var;
+  VarScope *sc2 = hashmap_get(&sc->vars, name);
+  if (sc2 && sc2->var && sc2->var->is_function)
+    return sc2->var;
 
   return NULL;
 }
