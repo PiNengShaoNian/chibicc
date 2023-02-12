@@ -235,7 +235,7 @@ static void parse_args(int argc, char **argv)
       continue;
     }
 
-    if (!strncmp(argv[i], "-x", 2))
+    if (!strncmp(argv[i], "-x", 2) || !strncmp(argv[i], "-Wl,", 4))
     {
       opt_x = parse_opt_x(argv[i] + 2);
       continue;
@@ -810,6 +810,18 @@ int main(int argc, char **argv)
     if (!strncmp(input, "-l", 2))
     {
       strarray_push(&ld_args, input);
+      continue;
+    }
+
+    if (!strncmp(input, "-Wl,", 4))
+    {
+      char *s = strdup(input + 4);
+      char *arg = strtok(s, ",");
+      while (arg)
+      {
+        strarray_push(&ld_args, arg);
+        arg = strtok(NULL, ",");
+      }
       continue;
     }
 
