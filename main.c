@@ -244,13 +244,13 @@ static void parse_args(int argc, char **argv)
       continue;
     }
 
-    if (!strncmp(argv[i], "-x", 2) || !strncmp(argv[i], "-Wl,", 4))
+    if (!strncmp(argv[i], "-x", 2))
     {
       opt_x = parse_opt_x(argv[i] + 2);
       continue;
     }
 
-    if (!strncmp(argv[i], "-l", 2))
+    if (!strncmp(argv[i], "-l", 2) || !strncmp(argv[i], "-Wl,", 4))
     {
       strarray_push(&input_paths, argv[i]);
       continue;
