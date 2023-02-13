@@ -91,6 +91,7 @@ static char *reg_ax(int sz)
   case 8:
     return "%rax";
   }
+  unreachable();
 }
 
 // Compute the absolute address of a given node.
@@ -1117,6 +1118,16 @@ static void gen_expr(Node *node)
     println("1:");
     println("  movzbl %%cl, %%eax");
     return;
+  }
+  case ND_EXCH:
+  {
+    gen_expr(node->lhs);
+    push();
+    gen_expr(node->rhs);
+    pop("%rdi");
+
+    int sz = node->lhs->ty->base->size;
+    println("  xchg %s, (%%rdi)", reg_ax(sz));
   }
   }
 
