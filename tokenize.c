@@ -240,6 +240,7 @@ static bool is_keyword(Token *tok)
         "asm",
         "_Thread_local",
         "__thread",
+        "_Atomic",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)

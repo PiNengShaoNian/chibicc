@@ -1128,6 +1128,7 @@ static void gen_expr(Node *node)
 
     int sz = node->lhs->ty->base->size;
     println("  xchg %s, (%%rdi)", reg_ax(sz));
+    return;
   }
   }
 

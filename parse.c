@@ -426,6 +426,7 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
 
   Type *ty = ty_int;
   int counter = 0;
+  bool is_atomic = false;
 
   while (is_typename(tok))
   {
@@ -462,6 +463,18 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
         consume(&tok, tok, "restrict") || consume(&tok, tok, "__restrict") ||
         consume(&tok, tok, "__restrict__") || consume(&tok, tok, "_Noreturn"))
       continue;
+
+    if (equal(tok, "_Atomic"))
+    {
+      tok = tok->next;
+      if (equal(tok, "("))
+      {
+        ty = typename(&tok, tok->next);
+        tok = skip(tok, ")");
+      }
+      is_atomic = true;
+      continue;
+    }
 
     if (equal(tok, "_Alignas"))
     {
@@ -593,6 +606,12 @@ static Type *declspec(Token **rest, Token *tok, VarAttr *attr)
     }
 
     tok = tok->next;
+  }
+
+  if (is_atomic)
+  {
+    ty = copy_type(ty);
+    ty->is_atomic = true;
   }
 
   *rest = tok;
@@ -1660,6 +1679,7 @@ static bool is_typename(Token *tok)
         "inline",
         "_Thread_local",
         "__thread",
+        "_Atomic",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
@@ -2256,6 +2276,76 @@ static Node *to_assign(Node *binary)
                              new_binary(binary->kind, expr3, binary->rhs, tok), tok);
 
     return new_binary(ND_COMMA, expr1, expr4, tok);
+  }
+
+  // If A is an atomic type, Convert `A op= B` to
+  //
+  // ({
+  //    T1 *addr = &A; T2 val = (B); T1 old = *addr; T1 new;
+  //    do {
+  //      new = old op val;
+  //    } while(!atomic_compare_exchange_strong(addr, &old, new));
+  //    new;
+  // })
+  if (binary->lhs->ty->is_atomic)
+  {
+    Node head = {};
+    Node *cur = &head;
+
+    Obj *addr = new_lvar("", pointer_to(binary->lhs->ty));
+    Obj *val = new_lvar("", binary->rhs->ty);
+    Obj *old = new_lvar("", binary->lhs->ty);
+    Obj *new = new_lvar("", binary->lhs->ty);
+
+    cur = cur->next = new_unary(ND_EXPR_STMT,
+                                new_binary(ND_ASSIGN,
+                                           new_var_node(addr, tok),
+                                           new_unary(ND_ADDR, binary->lhs, tok),
+                                           tok),
+                                tok);
+
+    cur = cur->next = new_unary(ND_EXPR_STMT,
+                                new_binary(ND_ASSIGN,
+                                           new_var_node(val, tok),
+                                           binary->rhs,
+                                           tok),
+                                tok);
+
+    cur = cur->next = new_unary(ND_EXPR_STMT,
+                                new_binary(ND_ASSIGN,
+                                           new_var_node(old, tok),
+                                           new_unary(ND_DEREF,
+                                                     new_var_node(addr, tok),
+                                                     tok),
+                                           tok),
+                                tok);
+
+    Node *loop = new_node(ND_DO, tok);
+    loop->brk_label = new_unique_name();
+    loop->cont_label = new_unique_name();
+
+    Node *body = new_binary(ND_ASSIGN,
+                            new_var_node(new, tok),
+                            new_binary(binary->kind,
+                                       new_var_node(old, tok),
+                                       new_var_node(val, tok),
+                                       tok),
+                            tok);
+    loop->then = new_node(ND_BLOCK, tok);
+    loop->then->body = new_unary(ND_EXPR_STMT, body, tok);
+
+    Node *cas = new_node(ND_CAS, tok);
+    cas->cas_addr = new_var_node(addr, tok);
+    cas->cas_old = new_unary(ND_ADDR, new_var_node(old, tok), tok);
+    cas->cas_new = new_var_node(new, tok);
+    loop->cond = new_unary(ND_NOT, cas, tok);
+
+    cur = cur->next = loop;
+    cur = cur->next = new_unary(ND_EXPR_STMT, new_var_node(new, tok), tok);
+
+    Node *node = new_node(ND_STMT_EXPR, tok);
+    node->body = head.next;
+    return node;
   }
 
   // Convert `A op = C` to `tmp = &A,*tmp = *tmp op B`.
