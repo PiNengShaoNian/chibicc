@@ -2889,9 +2889,28 @@ static void struct_members(Token **rest, Token *tok, Type *ty)
   ty->members = head.next;
 }
 
-// struct-union-decl = ident? ("{" struct-members)?
+// attribute = ("__attribute__" "(" "(" "packed" ")" ")")?
+static Token *attribute(Token *tok, Type *ty)
+{
+  if (!equal(tok, "__attribute__"))
+    return tok;
+
+  tok = tok->next;
+  tok = skip(tok, "(");
+  tok = skip(tok, "(");
+  tok = skip(tok, "packed");
+  tok = skip(tok, ")");
+  tok = skip(tok, ")");
+  ty->is_packed = true;
+  return tok;
+}
+
+// struct-union-decl = attribute? ident? ("{" struct-members)?
 static Type *struct_union_decl(Token **rest, Token *tok)
 {
+  Type *ty = struct_type();
+  tok = attribute(tok, ty);
+
   // Read a tag.
   Token *tag = NULL;
   if (tok->kind == TK_IDENT)
@@ -2904,11 +2923,10 @@ static Type *struct_union_decl(Token **rest, Token *tok)
   {
     *rest = tok;
 
-    Type *ty = find_tag(tag);
-    if (ty)
-      return ty;
+    Type *ty2 = find_tag(tag);
+    if (ty2)
+      return ty2;
 
-    ty = struct_type();
     ty->size = -1;
     push_tag_scope(tag, ty);
     return ty;
@@ -2917,8 +2935,8 @@ static Type *struct_union_decl(Token **rest, Token *tok)
   tok = skip(tok, "{");
 
   // Construct a struct object.
-  Type *ty = struct_type();
-  struct_members(rest, tok, ty);
+  struct_members(&tok, tok, ty);
+  *rest = attribute(tok, ty);
 
   if (tag)
   {
@@ -2969,12 +2987,13 @@ static Type *struct_decl(Token **rest, Token *tok)
     }
     else
     {
-      bits = align_to(bits, mem->align * 8);
+      if (!ty->is_packed)
+        bits = align_to(bits, mem->align * 8);
       mem->offset = bits / 8;
       bits += mem->ty->size * 8;
     }
 
-    if (ty->align < mem->align)
+    if (!ty->is_packed && ty->align < mem->align)
       ty->align = mem->align;
   }
 

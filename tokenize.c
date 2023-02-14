@@ -241,6 +241,7 @@ static bool is_keyword(Token *tok)
         "_Thread_local",
         "__thread",
         "_Atomic",
+        "__attribute__",
     };
 
     for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
